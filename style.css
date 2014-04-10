@@ -1,0 +1,33 @@
+#chart {
+	width: 800px;
+	height: 500px;
+}
+
+.dataline {
+	fill: none;
+	stroke: black;
+	stroke-width: 1.5px;
+	shape-rendering: geometricPrecision;
+}
+
+svg .axis path,
+svg .axis line {
+	fill: none;
+	stroke: #000;
+	stroke-width: 1px;
+	shape-rendering: crispEdges;
+}
+
+svg .axis.y .gridline {
+	stroke: #ddd;
+	opacity: 0.5;
+}
+
+svg .axis text {
+	font-family: "DejaVu Sans";
+	font-size: 9px!important;
+}
+
+svg .test {
+	stroke: #000;
+}
