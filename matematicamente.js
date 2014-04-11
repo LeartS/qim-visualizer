@@ -8,6 +8,8 @@ function pollon(dataset) {
 	    width = parseInt(container.style('width'), 10) - margin.left - margin.right,
 	    height = parseInt(container.style('height'), 10) - margin.top - margin.bottom;
 
+	var transitionDuration = 400;
+
 	var canvas = d3.select('#chart')
 		.append('svg')
 		.attr('width', width + margin.left + margin.right)
@@ -87,13 +89,15 @@ function pollon(dataset) {
 		//nested.get('max'),
 	];
 
-    canvas.selectAll('.dataline')
+	var plotArea = canvas.append('g')
+		.attr('class', 'data');
+
+    plotArea.selectAll('.dataline')
 		.data(toPlot)
 		.enter()
 		.append('path')
 		.attr('d', function(d) { return line(d); })
 		.attr('class', 'dataline');
-
 
 	d3.select('#adduser button')
 		.on('click', function() {
@@ -114,7 +118,7 @@ function pollon(dataset) {
 	function updateAxis() {
 		canvas.select('.y.axis')
 			.transition()
-			.duration(400)
+			.duration(transitionDuration)
 			.call(yAxisPosition);
 	}
 
@@ -126,16 +130,19 @@ function pollon(dataset) {
 			console.log(toPlot);
 			updateScale(toPlot);
 			updateAxis();
-			canvas.selectAll('.dataline')
-				.data(toPlot)
-				.attr('d', function(d) { return line(d); })
-				.enter()
+
+			var selection = plotArea.selectAll('.dataline')
+				.data(toPlot);
+			selection.transition()
+				.duration(transitionDuration)
+				.attr('d', function(d) { return line(d); });
+			selection.enter()
 				.append('path')
 				    .attr('d', function(d) { return line(d); })
 				    .attr('class', 'dataline')
 				    .style('opacity', 0)
 				.transition()
-				    .duration(400)
+				    .duration(transitionDuration)
 				    .style('opacity', 1);
 		}
 	}
