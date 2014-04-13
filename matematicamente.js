@@ -91,21 +91,9 @@ function pollon(dataset) {
 	var plotArea = canvas.append('g')
 		.attr('class', 'data');
 	console.log(toPlot);
-    var test = plotArea.selectAll('.series')
-		.data(toPlot)
-		.enter()
-		.append('g')
-		.attr('class', 'series');
-	test.append('path')
-		.attr('d', function(d) { return line(d); })
-		.attr('class', 'dataline')
-	test.append('text')
-		.attr({
-			'class': 'name',
-			'x': width + 5,
-			'y': function(d) { return yScalePosition(d[d.length-1]['Posizione']); },
-		})
-		.text(function(d) { return d[0]['Nome utente']; });
+    var selection = plotArea.selectAll('.series')
+		.data(toPlot);
+	addSeries(selection.enter());
 
 	d3.select('#adduser button')
 		.on('click', function() {
@@ -130,12 +118,31 @@ function pollon(dataset) {
 			.call(yAxisPosition);
 	}
 
+	function addSeries(selection) {
+		/* Takes a selection with bound data and adds series to it
+		 * (path, label, ...)
+		 * returns the series group selection */
+		var group = selection.append('g').attr('class', 'series');
+		group.append('path').attr({
+			'class': 'dataline',
+			'd': function(d) { return line(d); }
+		});
+		group.append('text')
+			.attr({
+				'class': 'name',
+				'x': width + 5,
+				'y': function(d) { return yScalePosition(d[d.length-1]['Posizione']); },
+			})
+			.text(function(d) { return d[0]['Nome utente']; });
+		return group;
+		
+	}
+
 	// CLick callbacks
 	function onAddUser(username) {
 		var userdata = nested.get(username);
 		if (userdata !== undefined) {
 			toPlot.push(nested.get(username));
-			console.log(toPlot);
 			updateScale(toPlot);
 			updateAxis();
 
@@ -147,14 +154,11 @@ function pollon(dataset) {
 			selection.select('text').transition()
 				.duration(transitionDuration)
 				.attr('y', function(d) { return yScalePosition(d[d.length-1]['Posizione']); });
-			selection.enter()
-				.append('path')
-				    .attr('d', function(d) { return line(d); })
-				    .attr('class', 'dataline')
-				    .style('opacity', 0)
+			var newSeries = addSeries(selection.enter());
+			newSeries.style('opacity', 0)
 				.transition()
-				    .duration(transitionDuration)
-				    .style('opacity', 1);
+				.duration(transitionDuration)
+				.style('opacity', 1);
 		}
 	}
 }
