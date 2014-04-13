@@ -3,8 +3,7 @@ function pollon(dataset) {
 	// Boxes definitions
     var container = d3.select('#chart');
 
-	var margin = {top: 20, right: 20, bottom: 30, left: 40},
-	    padding = {top: 20, right: 20, bottom: 30, left: 40},
+	var margin = {top: 20, right: 100, bottom: 30, left: 40},
 	    width = parseInt(container.style('width'), 10) - margin.left - margin.right,
 	    height = parseInt(container.style('height'), 10) - margin.top - margin.bottom;
 
@@ -76,7 +75,7 @@ function pollon(dataset) {
 
     var xAxisGroup = canvas.append('g')
 		.attr('class', 'x axis')
-		.attr("transform", "translate(0," + height + ")")
+		.attr('transform', 'translate(0,' + height + ')')
 		.call(xAxis);
     var yAxisGroup = canvas.append('g')
 		.attr('class', 'y axis')
@@ -91,13 +90,22 @@ function pollon(dataset) {
 
 	var plotArea = canvas.append('g')
 		.attr('class', 'data');
-
-    plotArea.selectAll('.dataline')
+	console.log(toPlot);
+    var test = plotArea.selectAll('.series')
 		.data(toPlot)
 		.enter()
-		.append('path')
+		.append('g')
+		.attr('class', 'series');
+	test.append('path')
 		.attr('d', function(d) { return line(d); })
-		.attr('class', 'dataline');
+		.attr('class', 'dataline')
+	test.append('text')
+		.attr({
+			'class': 'name',
+			'x': width + 5,
+			'y': function(d) { return yScalePosition(d[d.length-1]['Posizione']); },
+		})
+		.text(function(d) { return d[0]['Nome utente']; });
 
 	d3.select('#adduser button')
 		.on('click', function() {
@@ -131,11 +139,14 @@ function pollon(dataset) {
 			updateScale(toPlot);
 			updateAxis();
 
-			var selection = plotArea.selectAll('.dataline')
+			var selection = plotArea.selectAll('.series')
 				.data(toPlot);
-			selection.transition()
+			selection.select('path').transition()
 				.duration(transitionDuration)
 				.attr('d', function(d) { return line(d); });
+			selection.select('text').transition()
+				.duration(transitionDuration)
+				.attr('y', function(d) { return yScalePosition(d[d.length-1]['Posizione']); });
 			selection.enter()
 				.append('path')
 				    .attr('d', function(d) { return line(d); })
