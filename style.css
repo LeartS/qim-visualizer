@@ -5,9 +5,13 @@
 
 .dataline {
 	fill: none;
-	stroke: black;
+	stroke: #777;
 	stroke-width: 1.5px;
 	shape-rendering: geometricPrecision;
+}
+
+.dataline .selected {
+	stroke: #000;
 }
 
 svg .axis path,
@@ -38,7 +42,7 @@ svg .name {
 }
 
 svg path#range {
-	fill: green;
+	fill: #0AA49C;
 	stroke: none;
 	opacity: 0.15;
 }
