@@ -1,7 +1,7 @@
 function pollon(dataset) {
-	
+
 	// Boxes definitions
-    var container = d3.select('#chart');
+	var container = d3.select('#chart');
 
 	var margin = {top: 20, right: 100, bottom: 30, left: 40},
 	    width = parseInt(container.style('width'), 10) - margin.left - margin.right,
@@ -49,40 +49,40 @@ function pollon(dataset) {
 		.range([height, 0])
 //		.domain(d3.extent(dataset, function(x) { return x.score; }));
 		.domain([-30000, 30000]);
-	var yScalePosition = d3.scale.linear()
+	var yScaleRank = d3.scale.linear()
 		.range([height, 0])
 		.domain([200, 0]);
 
-    var line = d3.svg.line()
+	var line = d3.svg.line()
 		.interpolate('linear')
 		.x(function(d) { return xScale(d.datetime); })
 		.y(function(d, i) {
 			//return yScalescore(d.score - nested.get('mean')[i].score);
-			return yScalePosition(d.rank);
+			return yScaleRank(d.rank);
 		});
 
 	var area = d3.svg.area()
 		.x(function(d) { return xScale(d.x); })
-		.y0(function(d) { return yScalePosition(d.y0); })
-		.y1(function(d) { return yScalePosition(d.y1); });
+		.y0(function(d) { return yScaleRank(d.y0); })
+		.y1(function(d) { return yScaleRank(d.y1); });
 
-    // --- Axis definition ---
-    var xAxis = d3.svg.axis()
-        .scale(xScale)
-        .tickSize(10)
-        .orient('bottom');
-    var yAxis = d3.svg.axis()
-        .scale(yScaleScore)
-        .orient('left');
+	// --- Axis definition ---
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.tickSize(10)
+		.orient('bottom');
+	var yAxis = d3.svg.axis()
+		.scale(yScaleScore)
+		.orient('left');
 	var yAxisPosition = d3.svg.axis()
-		.scale(yScalePosition)
+		.scale(yScaleRank)
 		.orient('left');
 
-    var xAxisGroup = canvas.append('g')
+	var xAxisGroup = canvas.append('g')
 		.attr('class', 'x axis')
 		.attr('transform', 'translate(0,' + height + ')')
 		.call(xAxis);
-    var yAxisGroup = canvas.append('g')
+	var yAxisGroup = canvas.append('g')
 		.attr('class', 'y axis')
 		.call(yAxisPosition);
 
@@ -91,12 +91,9 @@ function pollon(dataset) {
 
 	var toPlot = d3.map();
 	onAddUser('Learts');
-	//toPlot.set('Learts', nested.get('Learts'));
-		//nested.get('mean'),
+			//nested.get('mean'),
 		//nested.get('min'),
 		//nested.get('max'),
-	console.log(toPlot.values());
-	console.log(toPlot.size());
 
 	plotArea.append('path').attr('id', 'range');
 
@@ -112,7 +109,7 @@ function pollon(dataset) {
 		});
 
 	function updateScale() {
-		yScalePosition.domain([
+		yScaleRank.domain([
 			d3.max(toPlot.values(), function(d) {
 				return d3.max(d, function(dd) { return dd.rank; });
 			}) + 10,
@@ -135,7 +132,7 @@ function pollon(dataset) {
 			.attr('d', function(d) { return line(d); });
 		selection.select('text').transition()
 			.duration(transitionDuration)
-			.attr('y', function(d) { return yScalePosition(d[d.length-1].rank); });
+			.attr('y', function(d) { return yScaleRank(d[d.length-1].rank); });
 	}
 
 	function updateRange() {
@@ -150,7 +147,6 @@ function pollon(dataset) {
 		updateSeries();
 		updateRange();
 	}
-	
 
 	function addSeries(selection) {
 		/* Takes a selection with bound data and adds series to it
@@ -165,12 +161,11 @@ function pollon(dataset) {
 			.attr({
 				'class': 'name',
 				'x': width + 5,
-				'y': function(d) { return yScalePosition(d[d.length-1].rank); },
+				'y': function(d) { return yScaleRank(d[d.length-1].rank); },
 			})
 			.text(function(d) { return d[0].user; })
 			.on('click', function(d) { onDelUser(d[0].user); });
 		return group;
-		
 	}
 
 	function onDelUser(username) {
@@ -192,7 +187,6 @@ function pollon(dataset) {
 		if (userdata !== undefined) {
 			toPlot.set(username, userdata);
 			updateChart();
-			
 			var enterSelection = plotArea.selectAll('.series')
 				.data(toPlot.values(), function(d) { return d[0].user; }).enter();
 			console.log(enterSelection);
@@ -239,6 +233,5 @@ function pollon(dataset) {
 		plotArea.select('path#range')
 			.datum(areaData)
 			.attr({'class': 'active', 'd': area(areaData)});
-	}			
-
+	}
 }
