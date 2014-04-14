@@ -86,20 +86,19 @@ function pollon(dataset) {
 		.attr('class', 'y axis')
 		.call(yAxisPosition);
 
-	var toPlot = [
-		nested.get('Learts'),
+	var plotArea = canvas.append('g')
+		.attr('class', 'data');
+
+	var toPlot = d3.map();
+	onAddUser('Learts');
+	//toPlot.set('Learts', nested.get('Learts'));
 		//nested.get('mean'),
 		//nested.get('min'),
 		//nested.get('max'),
-	];
+	console.log(toPlot.values());
+	console.log(toPlot.size());
 
-
-	var plotArea = canvas.append('g')
-		.attr('class', 'data');
 	plotArea.append('path').attr('id', 'range');
-    var selection = plotArea.selectAll('.series')
-		.data(toPlot);
-	addSeries(selection.enter());
 
 	d3.select('#controls button#adduser')
 		.on('click', function() {
@@ -112,14 +111,13 @@ function pollon(dataset) {
 			showRange('Learts', score);
 		});
 
-	function updateScale(toPlot) {
+	function updateScale() {
 		yScalePosition.domain([
-			d3.max(toPlot, function(d) {
+			d3.max(toPlot.values(), function(d) {
 				return d3.max(d, function(dd) { return dd.rank; });
 			}) + 10,
 			0
 		]);
-		console.log(yScalePosition.domain());
 	}
 
 	function updateAxis() {
@@ -128,6 +126,31 @@ function pollon(dataset) {
 			.duration(transitionDuration)
 			.call(yAxisPosition);
 	}
+
+	function updateSeries() {
+		var selection = plotArea.selectAll('.series')
+			.data(toPlot.values(), function(d) { return d[0].user; });
+		selection.select('path').transition()
+			.duration(transitionDuration)
+			.attr('d', function(d) { return line(d); });
+		selection.select('text').transition()
+			.duration(transitionDuration)
+			.attr('y', function(d) { return yScalePosition(d[d.length-1].rank); });
+	}
+
+	function updateRange() {
+		d3.select('path#range.active').transition()
+			.duration(transitionDuration)
+			.attr('d', function(d) { return area(d); });
+	}
+
+	function updateChart() {
+		updateScale();
+		updateAxis();
+		updateSeries();
+		updateRange();
+	}
+	
 
 	function addSeries(selection) {
 		/* Takes a selection with bound data and adds series to it
@@ -144,9 +167,20 @@ function pollon(dataset) {
 				'x': width + 5,
 				'y': function(d) { return yScalePosition(d[d.length-1].rank); },
 			})
-			.text(function(d) { return d[0].user; });
+			.text(function(d) { return d[0].user; })
+			.on('click', function(d) { onDelUser(d[0].user); });
 		return group;
 		
+	}
+
+	function onDelUser(username) {
+		console.log(username);
+		toPlot.remove(username);
+		var exitSelection = plotArea.selectAll('g.series')
+			.data(toPlot.values(), function(d) { return d[0].user; }).exit();
+		updateChart();
+		console.log(exitSelection);
+		exitSelection.remove();
 	}
 
 	// CLick callbacks
@@ -156,22 +190,13 @@ function pollon(dataset) {
 		// smoothly moves already present series to adapt to new scale and axis
 		var userdata = nested.get(username);
 		if (userdata !== undefined) {
-			toPlot.push(nested.get(username));
-			updateScale(toPlot);
-			updateAxis();
-
-			d3.select('path#range').transition()
-				.duration(transitionDuration)
-				.attr('d', function(d) { return area(d); });
-			var selection = plotArea.selectAll('.series')
-				.data(toPlot);
-			selection.select('path').transition()
-				.duration(transitionDuration)
-				.attr('d', function(d) { return line(d); });
-			selection.select('text').transition()
-				.duration(transitionDuration)
-				.attr('y', function(d) { return yScalePosition(d[d.length-1].rank); });
-			var newSeries = addSeries(selection.enter());
+			toPlot.set(username, userdata);
+			updateChart();
+			
+			var enterSelection = plotArea.selectAll('.series')
+				.data(toPlot.values(), function(d) { return d[0].user; }).enter();
+			console.log(enterSelection);
+			var newSeries = addSeries(enterSelection);
 			newSeries.style('opacity', 0)
 				.transition()
 				.duration(transitionDuration)
@@ -211,7 +236,9 @@ function pollon(dataset) {
 				y0: minInRange(todayScores, myScore, d.rank).rank
 			});
 		});
-		plotArea.select('path#range').datum(areaData).attr('d', area(areaData));
+		plotArea.select('path#range')
+			.datum(areaData)
+			.attr({'class': 'active', 'd': area(areaData)});
 	}			
 
 }
