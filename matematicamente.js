@@ -160,6 +160,9 @@ function pollon(dataset) {
 			updateScale(toPlot);
 			updateAxis();
 
+			d3.select('path#range').transition()
+				.duration(transitionDuration)
+				.attr('d', function(d) { return area(d); });
 			var selection = plotArea.selectAll('.series')
 				.data(toPlot);
 			selection.select('path').transition()
@@ -208,7 +211,7 @@ function pollon(dataset) {
 				y0: minInRange(todayScores, myScore, d.rank).rank
 			});
 		});
-		plotArea.select('path#range').attr('d', area(areaData));
+		plotArea.select('path#range').datum(areaData).attr('d', area(areaData));
 	}			
 
 }
