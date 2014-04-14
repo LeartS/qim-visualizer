@@ -17,23 +17,23 @@ function pollon(dataset) {
 		.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
 	// Data manipulation
-	dataset = dataset.filter(function(d) { return d['Posizione'] < 12000; });
+	dataset = dataset.filter(function(d) { return d.rank < 12000; });
 	var nested = d3.nest()
-		.key(function(d) { return d['Nome utente']; }).map(dataset, d3.map);
+		.key(function(d) { return d.user; }).map(dataset, d3.map);
 
 	var top200nested = d3.nest()
-		.key(function(d) { return d['Datetime']; });
+		.key(function(d) { return d.datetime; });
 
 	['min', 'max', 'mean'].forEach(function(f) {
 		var computed = top200nested.rollup(function(leaves) {
-			return d3[f](leaves, function(d) { return d['Punteggio']; });
+			return d3[f](leaves, function(d) { return d.score; });
 		}).entries(dataset);
 		scores = [];
 		computed.forEach(function(d) {
 			scores.push({
-				'Datetime': d.key,
-				'Nome utente': f,
-				'Punteggio': d.values,
+				datetime: d.key,
+				user: f,
+				score: d.values,
 			});
 		});
 		nested.set(f, scores);
@@ -43,11 +43,11 @@ function pollon(dataset) {
 	var xScale = d3.time.scale()
 		.range([0, width])
 		.domain(d3.extent(dataset, function(x) {
-			return Date.parse(x['Datetime']);
+			return x.datetime;
 		}));
 	var yScaleScore = d3.scale.linear()
 		.range([height, 0])
-//		.domain(d3.extent(dataset, function(x) { return +x['Punteggio']; }));
+//		.domain(d3.extent(dataset, function(x) { return x.score; }));
 		.domain([-30000, 30000]);
 	var yScalePosition = d3.scale.linear()
 		.range([height, 0])
@@ -55,11 +55,16 @@ function pollon(dataset) {
 
     var line = d3.svg.line()
 		.interpolate('linear')
-		.x(function(d) { return xScale(Date.parse(d['Datetime'])); })
+		.x(function(d) { return xScale(d.datetime); })
 		.y(function(d, i) {
-			//return yScalescore(d['Punteggio'] - nested.get('mean')[i]['Punteggio']);
-			return yScalePosition(d['Posizione']);
+			//return yScalescore(d.score - nested.get('mean')[i].score);
+			return yScalePosition(d.rank);
 		});
+
+	var area = d3.svg.area()
+		.x(function(d) { return xScale(d.x); })
+		.y0(function(d) { return yScalePosition(d.y0); })
+		.y1(function(d) { return yScalePosition(d.y1); });
 
     // --- Axis definition ---
     var xAxis = d3.svg.axis()
@@ -88,23 +93,29 @@ function pollon(dataset) {
 		//nested.get('max'),
 	];
 
+
 	var plotArea = canvas.append('g')
 		.attr('class', 'data');
-	console.log(toPlot);
+	plotArea.append('path').attr('id', 'range');
     var selection = plotArea.selectAll('.series')
 		.data(toPlot);
 	addSeries(selection.enter());
 
-	d3.select('#adduser button')
+	d3.select('#controls button#adduser')
 		.on('click', function() {
-			var username = d3.select('#adduser input').node().value;
+			var username = d3.select('#controls input#nick').node().value;
 			onAddUser(username);
+		});
+	d3.select('#controls button#check')
+		.on('click', function() {
+			var score = +(d3.select('#controls input#range').node().value);
+			showRange('Learts', score);
 		});
 
 	function updateScale(toPlot) {
 		yScalePosition.domain([
 			d3.max(toPlot, function(d) {
-				return d3.max(d, function(dd) { return +dd['Posizione']; });
+				return d3.max(d, function(dd) { return dd.rank; });
 			}) + 10,
 			0
 		]);
@@ -131,15 +142,18 @@ function pollon(dataset) {
 			.attr({
 				'class': 'name',
 				'x': width + 5,
-				'y': function(d) { return yScalePosition(d[d.length-1]['Posizione']); },
+				'y': function(d) { return yScalePosition(d[d.length-1].rank); },
 			})
-			.text(function(d) { return d[0]['Nome utente']; });
+			.text(function(d) { return d[0].user; });
 		return group;
 		
 	}
 
 	// CLick callbacks
 	function onAddUser(username) {
+		// Adds new user series
+		// updates scale, axis
+		// smoothly moves already present series to adapt to new scale and axis
 		var userdata = nested.get(username);
 		if (userdata !== undefined) {
 			toPlot.push(nested.get(username));
@@ -153,7 +167,7 @@ function pollon(dataset) {
 				.attr('d', function(d) { return line(d); });
 			selection.select('text').transition()
 				.duration(transitionDuration)
-				.attr('y', function(d) { return yScalePosition(d[d.length-1]['Posizione']); });
+				.attr('y', function(d) { return yScalePosition(d[d.length-1].rank); });
 			var newSeries = addSeries(selection.enter());
 			newSeries.style('opacity', 0)
 				.transition()
@@ -161,4 +175,40 @@ function pollon(dataset) {
 				.style('opacity', 1);
 		}
 	}
+
+	function showRange(username, points) {
+		function maxInRange(scores, p) {
+			var index = 0;
+			while (scores[index].score > p + points) {
+				index++;
+			}
+			return scores[index];			
+		}
+
+		function minInRange(scores, p, start) {
+			var index = start;
+			while (scores[index].score > p - points) {
+				index++;
+			}
+			return scores[index];
+		}
+
+		over = [];
+		under = [];
+		areaData = []
+		var byDate = d3.nest().key(function(d) { return d.datetime; })
+			.map(dataset, d3.map);
+		nested.get(username).forEach(function(d) {
+			var myScore = d.score;
+			var datetime = d.datetime;
+			var todayScores = byDate.get(datetime);
+			areaData.push({
+				x: datetime,
+				y1: maxInRange(todayScores, myScore).rank,
+				y0: minInRange(todayScores, myScore, d.rank).rank
+			});
+		});
+		plotArea.select('path#range').attr('d', area(areaData));
+	}			
+
 }

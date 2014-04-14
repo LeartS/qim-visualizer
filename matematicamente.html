@@ -6,11 +6,11 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.5/d3.min.js" charset="utf-8"></script>
   </head>
   <body>
-	<div id="adduser">
-	  <input type="text" />
-	  <button name="uhm">Add!</button>
-	  <input type="number" />
-	  <button name="boh">Check!</button>
+	<div id="controls">
+	  <input id="nick" type="text" />
+	  <button id="adduser" name="uhm">Add!</button>
+	  <input id="range" type="number" />
+	  <button id="check" name="boh">Check!</button>
 	  <input type="radio" name="yscale" value="score">Score</input>
 	  <input type="radio" name="yscale" value="position" checked>Position</input>
 	</div>
@@ -18,8 +18,16 @@
     </div>
     <script type="text/javascript" src="matematicamente.js"></script>
     <script type="text/javascript">
-      d3.tsv('data.csv', function(error, rows) {
-	  pollon(rows);
+      d3.tsv('data.csv', function(d) {
+		  return {
+			  user: d['Nome utente'],
+			  rank: +d['Posizione'],
+			  score: +d['Punteggio'],
+			  datetime: Date.parse(d['Datetime']),
+			  answers: +d['Risposte date']
+		  };
+	  }, function(error, rows) {
+		  pollon(rows);
       });
     </script>
   </body>

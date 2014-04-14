@@ -36,3 +36,9 @@ svg .name {
 	font-size: 10px;
 	dominant-baseline: middle;
 }
+
+svg path#range {
+	fill: green;
+	stroke: none;
+	opacity: 0.15;
+}
