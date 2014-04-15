@@ -19,7 +19,7 @@ function pollon(dataset) {
 	// Data manipulation
 	dataset = dataset.filter(function(d) { return d.rank < 12000; });
 	var nested = d3.nest()
-		.key(function(d) { return d.user; }).map(dataset, d3.map);
+		.key(function(d) { return d.user.toLowerCase(); }).map(dataset, d3.map);
 
 	var top200nested = d3.nest()
 		.key(function(d) { return d.datetime; });
@@ -91,7 +91,7 @@ function pollon(dataset) {
 
 	var rangeBottom = [];
 	var toPlot = d3.map();
-	addUser('Learts');
+	addUser('learts');
 			//nested.get('mean'),
 		//nested.get('min'),
 		//nested.get('max'),
@@ -101,18 +101,15 @@ function pollon(dataset) {
 	d3.select('#controls button#adduser')
 		.on('click', function() {
 			var username = d3.select('#controls input#nick').node().value;
-			addUser(username);
+			addUser(username.toLowerCase());
 		});
 	d3.select('#controls button#check')
 		.on('click', function() {
 			var score = +(d3.select('#controls input#range').node().value);
-			addRange('Learts', score);
+			addRange('learts', score);
 		});
 
 	function updateScale() {
-		console.log(toPlot.values());
-		console.log(rangeBottom);
-		console.log(toPlot.values().concat([rangeBottom]));
 		yScaleRank.domain([
 			d3.max(toPlot.values().concat([rangeBottom]), function(d) {
 				return d3.max(d, function(dd) { return dd.rank; });
@@ -168,17 +165,15 @@ function pollon(dataset) {
 				'y': function(d) { return yScaleRank(d[d.length-1].rank); },
 			})
 			.text(function(d) { return d[0].user; })
-			.on('click', function(d) { delUser(d[0].user); });
+			.on('click', function(d) { delUser(d[0].user.toLowerCase()); });
 		return group;
 	}
 
 	function delUser(username) {
-		console.log(username);
 		toPlot.remove(username);
 		var exitSelection = plotArea.selectAll('g.series')
 			.data(toPlot.values(), function(d) { return d[0].user; }).exit();
 		updateChart();
-		console.log(exitSelection);
 		exitSelection.remove();
 	}
 
@@ -223,7 +218,9 @@ function pollon(dataset) {
 		areaData = [];
 		var byDate = d3.nest().key(function(d) { return d.datetime; })
 			.map(dataset, d3.map);
-		nested.get(username).forEach(function(d) {
+		userData = nested.get(username);
+		if (userData === undefined) return;
+		userData.forEach(function(d) {
 			var myScore = d.score;
 			var datetime = d.datetime;
 			var todayScores = byDate.get(datetime);
