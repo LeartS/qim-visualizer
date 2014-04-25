@@ -110,12 +110,14 @@ function pollon(dataset) {
 		});
 
 	function updateScale() {
-		yScaleRank.domain([
-			d3.max(toPlot.values().concat([rangeBottom]), function(d) {
-				return d3.max(d, function(dd) { return dd.rank; });
-			}) + 10,
-			0
-		]);
+		var toConsider = toPlot.values().concat([rangeBottom]);
+		var minRank = d3.min(toConsider, function(d) {
+			return d3.min(d, function(dd) { return dd.rank; });
+		});
+		var maxRank = d3.max(toConsider, function(d) {
+			return d3.max(d, function(dd) { return dd.rank; });
+		});
+		yScaleRank.domain([maxRank + 10, Math.max(minRank - 10, 0) ]);
 	}
 
 	function updateAxis() {
