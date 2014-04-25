@@ -19,7 +19,7 @@ function pollon(dataset) {
 	// Data manipulation
 	dataset = dataset.filter(function(d) { return d.rank < 12000; });
 	var nested = d3.nest()
-		.key(function(d) { return d.user; }).map(dataset, d3.map);
+		.key(function(d) { return d.user.toLowerCase(); }).map(dataset, d3.map);
 
 	var top200nested = d3.nest()
 		.key(function(d) { return d.datetime; });
@@ -89,8 +89,9 @@ function pollon(dataset) {
 	var plotArea = canvas.append('g')
 		.attr('class', 'data');
 
+	var rangeBottom = [];
 	var toPlot = d3.map();
-	onAddUser('Learts');
+	addUser('learts');
 			//nested.get('mean'),
 		//nested.get('min'),
 		//nested.get('max'),
@@ -100,21 +101,23 @@ function pollon(dataset) {
 	d3.select('#controls button#adduser')
 		.on('click', function() {
 			var username = d3.select('#controls input#nick').node().value;
-			onAddUser(username);
+			addUser(username.toLowerCase());
 		});
 	d3.select('#controls button#check')
 		.on('click', function() {
 			var score = +(d3.select('#controls input#range').node().value);
-			showRange('Learts', score);
+			addRange('learts', score);
 		});
 
 	function updateScale() {
-		yScaleRank.domain([
-			d3.max(toPlot.values(), function(d) {
-				return d3.max(d, function(dd) { return dd.rank; });
-			}) + 10,
-			0
-		]);
+		var toConsider = toPlot.values().concat([rangeBottom]);
+		var minRank = d3.min(toConsider, function(d) {
+			return d3.min(d, function(dd) { return dd.rank; });
+		});
+		var maxRank = d3.max(toConsider, function(d) {
+			return d3.max(d, function(dd) { return dd.rank; });
+		});
+		yScaleRank.domain([maxRank + 10, Math.max(minRank - 10, 0) ]);
 	}
 
 	function updateAxis() {
@@ -164,22 +167,20 @@ function pollon(dataset) {
 				'y': function(d) { return yScaleRank(d[d.length-1].rank); },
 			})
 			.text(function(d) { return d[0].user; })
-			.on('click', function(d) { onDelUser(d[0].user); });
+			.on('click', function(d) { delUser(d[0].user.toLowerCase()); });
 		return group;
 	}
 
-	function onDelUser(username) {
-		console.log(username);
+	function delUser(username) {
 		toPlot.remove(username);
 		var exitSelection = plotArea.selectAll('g.series')
 			.data(toPlot.values(), function(d) { return d[0].user; }).exit();
 		updateChart();
-		console.log(exitSelection);
 		exitSelection.remove();
 	}
 
 	// CLick callbacks
-	function onAddUser(username) {
+	function addUser(username) {
 		// Adds new user series
 		// updates scale, axis
 		// smoothly moves already present series to adapt to new scale and axis
@@ -188,8 +189,8 @@ function pollon(dataset) {
 			toPlot.set(username, userdata);
 			updateChart();
 			var enterSelection = plotArea.selectAll('.series')
-				.data(toPlot.values(), function(d) { return d[0].user; }).enter();
-			console.log(enterSelection);
+				.data(toPlot.values(), function(d) { return d[0].user; })
+				.enter();
 			var newSeries = addSeries(enterSelection);
 			newSeries.style('opacity', 0)
 				.transition()
@@ -198,13 +199,13 @@ function pollon(dataset) {
 		}
 	}
 
-	function showRange(username, points) {
+	function addRange(username, points) {
 		function maxInRange(scores, p) {
 			var index = 0;
 			while (scores[index].score > p + points) {
 				index++;
 			}
-			return scores[index];			
+			return scores[index];
 		}
 
 		function minInRange(scores, p, start) {
@@ -215,23 +216,35 @@ function pollon(dataset) {
 			return scores[index];
 		}
 
-		over = [];
-		under = [];
-		areaData = []
+		rangeBottom = [];
+		areaData = [];
 		var byDate = d3.nest().key(function(d) { return d.datetime; })
 			.map(dataset, d3.map);
-		nested.get(username).forEach(function(d) {
+		userData = nested.get(username);
+		if (userData === undefined) return;
+		userData.forEach(function(d) {
 			var myScore = d.score;
 			var datetime = d.datetime;
 			var todayScores = byDate.get(datetime);
+			var top = maxInRange(todayScores, myScore);
+			var bottom = minInRange(todayScores, myScore, d.rank);
 			areaData.push({
-				x: datetime,
-				y1: maxInRange(todayScores, myScore).rank,
-				y0: minInRange(todayScores, myScore, d.rank).rank
+				'x': datetime,
+				'y1': top.rank,
+				'y0': bottom.rank,
+			});
+			rangeBottom.push({
+				'datetime': datetime,
+				'user': 'bottom_range',
+				'rank': bottom.rank,
+				'score': bottom.score
 			});
 		});
+
 		plotArea.select('path#range')
 			.datum(areaData)
 			.attr({'class': 'active', 'd': area(areaData)});
+
+		updateChart();
 	}
 }
