@@ -2,20 +2,23 @@
 <html>
   <head>
 	<meta charset="UTF-8">
+	<title>QIM Visualizer</title>
     <link type="text/css" rel="stylesheet" href="style.css" />
+	<link type="text/css" rel="stylesheet" href="completecus.css" />
 	<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.5/d3.min.js" charset="utf-8"></script>
   </head>
   <body>
 	<div id="controls">
 	  <input id="nick" type="text" />
 	  <button id="adduser" name="uhm">Add!</button>
-	  <input id="range" type="number" />
+	  <input id="range" type="number" size="8" />
 	  <button id="check" name="boh">Check!</button>
 	  <input type="radio" name="yscale" value="score">Score</input>
 	  <input type="radio" name="yscale" value="position" checked>Position</input>
 	</div>
     <div id="chart">
     </div>
+	<script type="text/javascript" src="external/completecus/completecus.js"></script>
     <script type="text/javascript" src="matematicamente.js"></script>
     <script type="text/javascript">
       d3.tsv('data.csv', function(d) {
@@ -28,6 +31,9 @@
 		  };
 	  }, function(error, rows) {
 		  pollon(rows);
+		  var nicks = rows.map(function(d) { return d.user; });
+		  var completeInput = new Complete(d3.select('#nick').node(), nicks);
+		  completeInput.emptyMessage = null;
       });
     </script>
   </body>

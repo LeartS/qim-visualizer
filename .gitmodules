@@ -1,0 +1,3 @@
+[submodule "external/completecus"]
+	path = external/completecus
+	url = git@github.com:LeartS/completecus
