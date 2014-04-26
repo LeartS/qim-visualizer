@@ -1,1 +1,36 @@
-../completejs/maintheme.css
+.completejs {
+	padding: 0;
+	margin: 0;
+	position: relative;
+}
+
+.completejs input {
+	padding: 0;
+	margin: 0;
+}
+
+.completejs div {
+	position: absolute;
+	margin: 0;
+	width: 200px;
+	/* max-height: 100px; */
+	overflow: auto;
+	border: 1px solid #CCC;
+	background: white;
+	z-index: 100;
+}
+
+.completejs ul {
+	/* float: left; */
+	/* position: absolute; */
+	list-style: none;
+	/* border: 1px solid #CCC; */
+	/* border-top: 0px; */
+	padding: 2px;
+	margin: 0;
+	width: auto;
+}
+
+.completejs ul li {
+	/* border: 1px solid red; */
+}
