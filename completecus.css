@@ -1,15 +1,15 @@
-.completejs {
+.completecus {
 	padding: 0;
 	margin: 0;
 	position: relative;
 }
 
-.completejs input {
+.completecus input {
 	padding: 0;
 	margin: 0;
 }
 
-.completejs div {
+.completecus div {
 	position: absolute;
 	margin: 0;
 	width: 200px;
@@ -20,7 +20,7 @@
 	z-index: 100;
 }
 
-.completejs ul {
+.completecus ul {
 	/* float: left; */
 	/* position: absolute; */
 	list-style: none;
@@ -31,6 +31,10 @@
 	width: auto;
 }
 
-.completejs ul li {
+.completecus ul li {
 	/* border: 1px solid red; */
+}
+
+.completecus ul li.selected {
+	background-color: #BBBBFF;
 }
