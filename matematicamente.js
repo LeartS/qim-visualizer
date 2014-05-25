@@ -20,6 +20,14 @@ function pollon(dataset) {
 	dataset = dataset.filter(function(d) { return d.rank < 12000; });
 	var nested = d3.nest()
 		.key(function(d) { return d.user.toLowerCase(); }).map(dataset, d3.map);
+	nested.forEach(function(username, userscores) {
+		for (var i = 1; i < userscores.length-1; i++) {
+			if (userscores[i].answers == userscores[i-1].answers &&
+				userscores[i].answers == userscores[i+1].answers - 2) {
+				userscores[i].fake = true;
+			}
+		}
+	});
 
 	var top200nested = d3.nest()
 		.key(function(d) { return d.datetime; });
@@ -52,13 +60,48 @@ function pollon(dataset) {
 	var yScaleRank = d3.scale.linear()
 		.range([height, 0])
 		.domain([200, 0]);
-
-	var line = d3.svg.line()
-		.interpolate('linear')
+	var xAccessor = function(d) { return xScale(d.datetime); }
+	var yAccessor = function(d, i) {
+			//return yScalescore(d.score - nested.get('mean')[i].score);
+			return (d.fake) && -1 || yScaleRank(d.rank);
+		}
+	var basicline = d3.svg.line()
 		.x(function(d) { return xScale(d.datetime); })
 		.y(function(d, i) {
 			//return yScalescore(d.score - nested.get('mean')[i].score);
-			return yScaleRank(d.rank);
+			return (d.fake) && -1 || yScaleRank(d.rank);
+		});
+
+	var line = d3.svg.line()
+		.x(xAccessor)
+		.y(yAccessor)
+		.interpolate(function(points) {
+			var path = points[0][0] + ',' + points[0][1];
+			var command = 'L';
+			for (var i = 1; i < points.length; i++) {
+				if (points[i][1] < 0) { // fake point
+					command = 'M';
+				} else {
+					path += command + points[i][0] + ',' + points[i][1]
+					command = 'L';
+				}
+			}
+			return path;
+		})
+
+	var fakeline = d3.svg.line()
+		.x(xAccessor)
+		.y(yAccessor)
+		.interpolate(function(points) {
+			var path  = '';
+			var command = '';
+			for (var i = 1; i < points.length; i++) {
+				if (points[i][1] < 0) {
+					path += command + points[i-1][0] + ',' + points[i-1][1] + 'L' + points[i+1][0] + ',' + points[i+1][1];
+					command = 'M';
+				}
+			}
+			return path;
 		});
 
 	var area = d3.svg.area()
@@ -91,7 +134,7 @@ function pollon(dataset) {
 
 	var rangeBottom = [];
 	var toPlot = d3.map();
-	addUser('learts');
+	// addUser('learts');
 			//nested.get('mean'),
 		//nested.get('min'),
 		//nested.get('max'),
@@ -112,10 +155,10 @@ function pollon(dataset) {
 	function updateScale() {
 		var toConsider = toPlot.values().concat([rangeBottom]);
 		var minRank = d3.min(toConsider, function(d) {
-			return d3.min(d, function(dd) { return dd.rank; });
+			return d3.min(d, function(dd) { return dd.fake && 9000 || dd.rank; });
 		});
 		var maxRank = d3.max(toConsider, function(d) {
-			return d3.max(d, function(dd) { return dd.rank; });
+			return d3.max(d, function(dd) { return dd.fake && 1 || dd.rank; });
 		});
 		yScaleRank.domain([maxRank + 10, Math.max(minRank - 10, 0) ]);
 	}
@@ -130,9 +173,12 @@ function pollon(dataset) {
 	function updateSeries() {
 		var selection = plotArea.selectAll('.series')
 			.data(toPlot.values(), function(d) { return d[0].user; });
-		selection.select('path').transition()
+		selection.select('path.dataline').transition()
 			.duration(transitionDuration)
 			.attr('d', function(d) { return line(d); });
+		selection.select('path.fakeline').transition()
+			.duration(transitionDuration)
+			.attr('d', function(d) { return fakeline(d); });
 		selection.select('text').transition()
 			.duration(transitionDuration)
 			.attr('y', function(d) { return yScaleRank(d[d.length-1].rank); });
@@ -159,6 +205,10 @@ function pollon(dataset) {
 		group.append('path').attr({
 			'class': 'dataline',
 			'd': function(d) { return line(d); }
+		});
+		group.append('path').attr({
+			'class': 'fakeline',
+			'd': function(d) { return fakeline(d); }
 		});
 		group.append('text')
 			.attr({
